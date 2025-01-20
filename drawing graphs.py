@@ -2,6 +2,10 @@ from scipy.misc import derivative
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+import sqlite3
+
+
+
 
 class EconomicGraph:
     def __init__(self):
