@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 import os
+from datetime import datetime
 
 # Define connection and cursor
 connection = sqlite3.connect("economic_data.db")
@@ -79,70 +80,302 @@ cursor.execute(command5)
 
 # # Delete all data from the EconomicData table
 # cursor.execute("DELETE FROM EconomicData")
-
-# # Commit the transaction to save the changes
 # connection.commit()
 
-# # Print a confirmation message
-# print("All data from EconomicData has been deleted.")
+
+###
+# # Insert this data FIRST into the EconomicData table:
+
+# # Load the data from the cleaned_gdp.xlsx file
+# excel_file = 'cleaned_gdp.xlsx'  # Replace with your actual file path
+# data = pd.read_excel(excel_file, header=None)  # Load data without a header row
+
+# # Display the first few rows of the data to check its structure
+# print(data.head())
+
+# # Add IndicatorID for GDP data (assuming it's IndicatorID = 1 for GDP)
+# data['IndicatorID'] = 1
+
+# # Create a new column to store the corresponding quarter date
+# quarters = ['01-01', '04-01', '07-01', '10-01']  # The start dates for each quarter
+
+# # Update the Date column with the full date including the quarter
+# dates = []
+# for idx, year in enumerate(data[0]):
+#     quarter = quarters[idx % 4]  # Cycle through the quarters
+#     date = f"{int(year)}-{quarter}"
+#     dates.append(date)
+
+# data['Date'] = dates
+
+# # Rename the second column to 'Value'
+# data['Value'] = data[1]
+
+# # Drop the old columns (keep only IndicatorID, Date, and Value)
+# data = data[['IndicatorID', 'Date', 'Value']]
+
+# # Verify the changes in the DataFrame
+# print(data.head())
+
+# # Connect to the economic_data.db database
+# db_connection = sqlite3.connect('economic_data.db')  # Use your database file name
+# cursor = db_connection.cursor()
+
+# # Insert data into the EconomicData table
+# for index, row in data.iterrows():
+#     try:
+#         query = """
+#         INSERT INTO EconomicData (IndicatorID, Date, Value)
+#         VALUES (?, ?, ?)
+#         """
+#         cursor.execute(query, (row['IndicatorID'], row['Date'], row['Value']))
+#     except Exception as e:
+#         print(f"Error inserting row {index}: {e}")
+
+# # Commit the transaction and close the connection
+# db_connection.commit()
+# db_connection.close()
+
+# print("Data successfully inserted into the EconomicData table.")
+
+# # Verify the data has been inserted correctly
+# connection = sqlite3.connect("economic_data.db")
+# cursor = connection.cursor()
+# cursor.execute("SELECT COUNT(*) FROM EconomicData")
+# count = cursor.fetchone()
+# print(f"Number of rows in EconomicData: {count[0]}")
+
+# # Retrieve the data to verify
+# cursor.execute("SELECT * FROM EconomicData")
+# results = cursor.fetchall()
+# print(results)
+
+# connection.close()
+###
 
 
 
-def insert_data_from_excel(file_path, indicator_id):
-    # Read Excel file
-    df = pd.read_excel(file_path)
-    
-    # Ensure that 'Value' column is numeric and clean any non-numeric values
-    df.iloc[:, 1] = pd.to_numeric(df.iloc[:, 1], errors='coerce')  # Ensure the second column is numeric
-    
-    # Check if there is data in the file
-    if df.empty:
-        print(f"Warning: The file {file_path} is empty!")
-        return
 
-    # Iterate over the rows of the DataFrame
-    for _, row in df.iterrows():
-        year = row.iloc[0]  # Accessing year column (first column)
-        value = row.iloc[1]  # Accessing value column (second column)
 
-        # Skip any rows with invalid 'Value' (NaN values)
-        if pd.isna(value):
-            continue
+###
+# # Insert this data SECOND into the EconomicData table:
 
-        # Print for debugging
-        print(f"Inserting data for IndicatorID {indicator_id}: Year = {year}, Value = {value}")
-        
-        # Insert data for each quarter of the year
-        quarters = ['-03-31', '-06-30', '-09-30', '-12-31']  # End of Q1, Q2, Q3, Q4
-        for quarter in quarters:
-            date = f"{int(year)}{quarter}"
-            cursor.execute("""
-                INSERT INTO EconomicData (IndicatorID, Date, Value)
-                VALUES (?, ?, ?)
-            """, (indicator_id, date, value))
-    
-    # Commit changes
-    connection.commit()
+# # Load the data from the cleaned_unemployment.xlsx file
+# excel_file = 'cleaned_unemployment.xlsx'  # Replace with your actual file path
+# data = pd.read_excel(excel_file, header=None)  # Load data without a header row
 
-# Path to the 'cleaned_data' folder
-folder_path = "cleaned_data"
+# # Display the first few rows of the data to check its structure
+# print(data.head())
 
-# Mapping files to their corresponding IndicatorID (now in order from smallest to largest ID)
-files_to_indicators = {
-    "cleaned_gdp.xlsx": 1,                     # 'GDP' = IndicatorID 1
-    "cleaned_unemployment.xlsx": 2,             # 'Unemployment Rate' = IndicatorID 2
-    "cleaned_cpi.xlsx": 3,                     # 'Inflation Rate' = IndicatorID 3
-    "cleaned_gdp_per_cap.xlsx": 4              # 'GDP Per Capita' = IndicatorID 4
-}
+# # Add IndicatorID for Unemployment data (assuming it's IndicatorID = 2 for Unemployment)
+# data['IndicatorID'] = 2
 
-# Iterate over the files and insert data, ensuring they are in order by indicator_id
-for file_name, indicator_id in sorted(files_to_indicators.items(), key=lambda x: x[1]):
-    file_path = os.path.join(folder_path, file_name)
-    if os.path.exists(file_path):
-        print(f"Processing file: {file_name} for IndicatorID {indicator_id}")
-        insert_data_from_excel(file_path, indicator_id)
-    else:
-        print(f"File not found: {file_name}")
+# # Create a new column to store the corresponding quarter date
+# quarters = ['01-01', '04-01', '07-01', '10-01']  # The start dates for each quarter
 
-# Close the connection
-connection.close()
+# # Update the Date column with the full date including the quarter
+# dates = []
+# for idx, year in enumerate(data[0]):
+#     quarter = quarters[idx % 4]  # Cycle through the quarters
+#     date = f"{int(year)}-{quarter}"
+#     dates.append(date)
+
+# data['Date'] = dates
+
+# # Rename the second column to 'Value'
+# data['Value'] = data[1]
+
+# # Drop the old columns (keep only IndicatorID, Date, and Value)
+# data = data[['IndicatorID', 'Date', 'Value']]
+
+# # Verify the changes in the DataFrame
+# print(data.head())
+
+# # Connect to the economic_data.db database
+# db_connection = sqlite3.connect('economic_data.db')  # Use your database file name
+# cursor = db_connection.cursor()
+
+# # Insert data into the EconomicData table
+# for index, row in data.iterrows():
+#     try:
+#         query = """
+#         INSERT INTO EconomicData (IndicatorID, Date, Value)
+#         VALUES (?, ?, ?)
+#         """
+#         cursor.execute(query, (row['IndicatorID'], row['Date'], row['Value']))
+#     except Exception as e:
+#         print(f"Error inserting row {index}: {e}")
+
+# # Commit the transaction and close the connection
+# db_connection.commit()
+# db_connection.close()
+
+# print("Data successfully inserted into the EconomicData table.")
+
+# # Verify the data has been inserted correctly
+# connection = sqlite3.connect("economic_data.db")
+# cursor = connection.cursor()
+# cursor.execute("SELECT COUNT(*) FROM EconomicData")
+# count = cursor.fetchone()
+# print(f"Number of rows in EconomicData: {count[0]}")
+
+# # Retrieve the data to verify
+# cursor.execute("SELECT * FROM EconomicData WHERE IndicatorID = 2")
+# results = cursor.fetchall()
+# print(results)
+
+# connection.close()
+###
+
+
+
+
+###
+# # Insert this data THIRD into the EconomicData table:
+
+# # Load the data from the Excel file
+# excel_file = 'cleaned_cpi.xlsx'  # Replace with your actual file path
+# data = pd.read_excel(excel_file, header=None)  # Load data without a header row
+
+# # Display the first few rows of the data to check its structure
+# print(data.head())
+
+# # Add IndicatorID for CPI data (assuming it's IndicatorID = 3 for CPI)
+# data['IndicatorID'] = 3
+
+# # Create a new column to store the corresponding quarter date
+# quarters = ['01-01', '04-01', '07-01', '10-01']  # The start dates for each quarter
+
+# # Update the Date column with the full date including the quarter
+# dates = []
+# for idx, year in enumerate(data[0]):
+#     quarter = quarters[idx % 4]  # Cycle through the quarters
+#     date = f"{int(year)}-{quarter}"
+#     dates.append(date)
+
+# data['Date'] = dates
+
+# # Rename the second column to 'Value'
+# data['Value'] = data[1]
+
+# # Drop the old columns (keep only IndicatorID, Date, and Value)
+# data = data[['IndicatorID', 'Date', 'Value']]
+
+# # Verify the changes in the DataFrame
+# print(data.head())
+
+# # Connect to the economic_data.db database
+# db_connection = sqlite3.connect('economic_data.db')  # Use your database file name
+# cursor = db_connection.cursor()
+
+# # Insert data into the EconomicData table
+# for index, row in data.iterrows():
+#     try:
+#         query = """
+#         INSERT INTO EconomicData (IndicatorID, Date, Value)
+#         VALUES (?, ?, ?)
+#         """
+#         cursor.execute(query, (row['IndicatorID'], row['Date'], row['Value']))
+#     except Exception as e:
+#         print(f"Error inserting row {index}: {e}")
+
+# # Commit the transaction and close the connection
+# db_connection.commit()
+# db_connection.close()
+
+# print("Data successfully inserted into the EconomicData table.")
+
+# # Verify the data has been inserted correctly
+# connection = sqlite3.connect("economic_data.db")
+# cursor = connection.cursor()
+# cursor.execute("SELECT COUNT(*) FROM EconomicData")
+# count = cursor.fetchone()
+# print(f"Number of rows in EconomicData: {count[0]}")
+
+# # Retrieve the data to verify
+# cursor.execute("SELECT * FROM EconomicData")
+# results = cursor.fetchall()
+# print(results)
+
+# connection.close()
+###
+
+
+
+
+
+###
+# # Insert this data LAST into the database
+
+# # Load the data from the cleaned_gdp_cap.xlsx file
+# excel_file = 'cleaned_gdp_per_cap.xlsx'  # Replace with your actual file path
+# data = pd.read_excel(excel_file, header=None)  # Load data without a header row
+
+# # Display the first few rows of the data to check its structure
+# print(data.head())
+
+# # Add IndicatorID for GDP per Capita data (assuming it's IndicatorID = 4 for GDP Per Capita)
+# data['IndicatorID'] = 4
+
+# # Create a new column to store the corresponding quarter date
+# quarters = ['01-01', '04-01', '07-01', '10-01']  # The start dates for each quarter
+
+# # Update the Date column with the full date including the quarter
+# dates = []
+# for idx, year in enumerate(data[0]):
+#     quarter = quarters[idx % 4]  # Cycle through the quarters
+#     date = f"{int(year)}-{quarter}"
+#     dates.append(date)
+
+# data['Date'] = dates
+
+# # Rename the second column to 'Value'
+# data['Value'] = data[1]
+
+# # Drop the old columns (keep only IndicatorID, Date, and Value)
+# data = data[['IndicatorID', 'Date', 'Value']]
+
+# # Verify the changes in the DataFrame
+# print(data.head())
+
+# # Connect to the economic_data.db database
+# db_connection = sqlite3.connect('economic_data.db')  # Use your database file name
+# cursor = db_connection.cursor()
+
+# # Insert data into the EconomicData table
+# for index, row in data.iterrows():
+#     try:
+#         query = """
+#         INSERT INTO EconomicData (IndicatorID, Date, Value)
+#         VALUES (?, ?, ?)
+#         """
+#         cursor.execute(query, (row['IndicatorID'], row['Date'], row['Value']))
+#     except Exception as e:
+#         print(f"Error inserting row {index}: {e}")
+
+# # Commit the transaction and close the connection
+# db_connection.commit()
+# db_connection.close()
+
+# print("Data successfully inserted into the EconomicData table.")
+
+# # Verify the data has been inserted correctly
+# connection = sqlite3.connect("economic_data.db")
+# cursor = connection.cursor()
+# cursor.execute("SELECT COUNT(*) FROM EconomicData")
+# count = cursor.fetchone()
+# print(f"Number of rows in EconomicData: {count[0]}")
+
+# # Retrieve the data to verify
+# cursor.execute("SELECT * FROM EconomicData WHERE IndicatorID = 4")
+# results = cursor.fetchall()
+# print(results)
+
+# connection.close()
+
+###
+
+
+cursor.execute("SELECT * FROM EconomicData")
+results = cursor.fetchall()
+print(results)

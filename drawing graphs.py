@@ -3,26 +3,34 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 import sqlite3
+import pandas as pd
+import os
+from datetime import datetime
 
-
-
+connection = sqlite3.connect("economic_data.db")
+cursor = connection.cursor()
 
 class EconomicGraph:
-    def __init__(self):
+    def __init__(self, db):
+        """
+        Initialize the EconomicGraph class.
+
+        :param db: An instance of the Database class.
+        """
+        self.db = db
         self.choice = None
 
     def display_options(self):
         print("Which graph would you like to draw and take information from:")
         time.sleep(1)
         print("Option (1): GDP")
-        print("Option (2): Inflation Rate")
-        print("Option (3): Exchange Rate")
+        print("Option (2): Unemployment Rate")
+        print("Option (3): Inflation Rate")
         print("Option (4): GDP per capita")
-        print("Option (5): Unemployment Rate")
-        print("Option (6): Demand/Supply Curves")
-        print("Option (7): Aggregate Demand and Aggregate Supply")
-        print("Option (8): Phillips Curve")
-        print("Option (9): Price and Income Elasticity")
+        print("Option (5): Demand/Supply Curves")
+        print("Option (6): Aggregate Demand and Aggregate Supply")
+        print("Option (7): Phillips Curve")
+        print("Option (8): Price and Income Elasticity")
         print(" ")
         self.choice = input("Pick your option: \n")
 
@@ -30,14 +38,9 @@ class EconomicGraph:
         while True:
             graph_methods = {
                 '1': self.gdp,
-                '2': self.inflation_rate,
-                '3': self.exchange_rate,
+                '2': self.unemployment_rate,
+                '3': self.inflation_rate,
                 '4': self.gdp_per_cap,
-                '5': self.unemployment_rate,
-                '6': self.demand_supply_curves,
-                '7': self.aggdemand_aggsupply_curves,
-                '8': self.phillips_curve,
-                '9': self.price_income_elasticity
             }
 
             if self.choice in graph_methods:
@@ -45,19 +48,13 @@ class EconomicGraph:
             else:
                 print("Invalid option")
 
-            # Ask the user if they want to continue
             continue_choice = input("Do you want to draw another graph? (yes/no): ").strip().lower()
             if continue_choice != 'yes':
                 break
 
-            # Display options again for the next choice
             self.display_options()
 
-    def get_user_color_choice(self):
-        """
-        Prompts the user to select a color and returns the corresponding color code.
-        """
-        # Display colour options
+    def get_user_colour_choice(self):
         print("Provide a colour you want the line to be, the available colours are:")
         print("(1) Blue")
         print("(2) Orange")
@@ -66,8 +63,7 @@ class EconomicGraph:
         print("(5) Yellow")
         print("(6) Purple")
         print("(7) Red")
-        
-        # Define color mapping
+
         colours = {
             1: 'blue',
             2: 'orange',
@@ -77,106 +73,62 @@ class EconomicGraph:
             6: 'purple',
             7: 'red'
         }
-        
-        # Get user input for colour choice
+
         while True:
             try:
                 colour_choice = int(input("Choose a colour: "))
                 if colour_choice in colours:
-                    return colours[colour_choice]  # Return the selected color
+                    return colours[colour_choice]
                 else:
-                    print("Invalid option. Please choose a number between 1 and 6.")
+                    print("Invalid option. Please choose a number between 1 and 7.")
             except ValueError:
                 print("Invalid input. Please enter a number.")
 
+    def fetch_data_and_plot(self, indicator_id, title, ylabel):
+        query = "SELECT Date, Value FROM EconomicData WHERE IndicatorID = ? ORDER BY Date"
+        data = self.db.fetch_data(query, (indicator_id,))
+
+        yearly_data = {}
+        for record in data:
+            year = record[0][:4]
+            value = record[1]
+            if year not in yearly_data:
+                yearly_data[year] = []
+            yearly_data[year].append(value)
+
+        years = sorted(yearly_data.keys())
+        avg_values = [sum(values) / len(values) for values in sorted(yearly_data.values())]
+
+        selected_colour = self.get_user_colour_choice()
+
+        plt.figure(figsize=(10, 6))
+
+        # Line Graph
+        plt.plot(years, avg_values, marker='o', linestyle='-', color=selected_colour, label=f'{title} (Line)')
+
+        # Bar Graph
+        plt.bar(years, avg_values, color=selected_colour, alpha=0.6, label=f'{title} (Bar)')
+
+        plt.xlabel('Year')
+        plt.ylabel(ylabel)
+        plt.title(title)
+        plt.legend()
+        plt.xticks(rotation=45)
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
     def gdp(self):
-        years = np.arange(2000, 2024)
-        gdp_values = np.random.uniform(1.0, 3.0, len(years)) * 1000  # Once real GDP data is found, replace this
-        
-        # Get user's colour choice
-        selected_color = self.get_user_color_choice()
-        
-        # Plot the GDP graph
-        plt.plot(years, gdp_values, label="GDP (in billions)", color=selected_color)
-        plt.xlabel("Year")
-        plt.ylabel("GDP")
-        plt.title("Gross Domestic Product over Time")
-        plt.legend()
-        plt.show()
-
-
-    def inflation_rate(self):
-        years = np.arange(2000, 2024)
-        inflation = np.random.uniform(0, 10, len(years))
-
-        def find_peak(data, i=0, max_value=0):
-            if i == len(data): return max_value
-            return find_peak(data, i + 1, max(data[i], max_value))
-
-        peak_inflation = find_peak(inflation)
-        
-        # Get user's colour choice
-        selected_color = self.get_user_color_choice()
-        
-        plt.plot(years, inflation, label="Inflation Rate", color=selected_color)
-        plt.axhline(peak_inflation, linestyle='--', color='red', label="Peak Inflation")
-        plt.xlabel("Year")
-        plt.ylabel("Inflation Rate (%)")
-        plt.title("Inflation Rate Over Time")
-        plt.legend()
-        plt.show()
-
-
-
-    def exchange_rate(self):
-        years = np.arange(2000, 2024)
-        exchange_rates = { 'USD': np.random.uniform(1.0, 1.5, len(years)),
-                        'EUR': np.random.uniform(0.8, 1.2, len(years)) }
-
-        # Get user's colour choice for USD
-        usd_color = self.get_user_color_choice()
-        
-        # Get user's colour choice for EUR
-        eur_color = self.get_user_color_choice()
-        
-        plt.plot(years, exchange_rates['USD'], label="GBP to USD", color=usd_color)
-        plt.plot(years, exchange_rates['EUR'], label="GBP to EUR", color=eur_color)
-        plt.xlabel("Year")
-        plt.ylabel("Exchange Rate")
-        plt.title("Exchange Rates Over Time")
-        plt.legend()
-        plt.show()
-
-
-    def gdp_per_cap(self):
-        years = np.arange(2000, 2024)
-        gdp_per_cap = np.random.uniform(20000, 50000, len(years))
-
-        # Get user's colour choice
-        selected_color = self.get_user_color_choice()
-        
-        plt.plot(years, gdp_per_cap, label="GDP per Capita", color=selected_color)
-        plt.xlabel("Year")
-        plt.ylabel("GDP per Capita (USD)")
-        plt.title("GDP per Capita over Time")
-        plt.legend()
-        plt.show()
-
+        self.fetch_data_and_plot(1, 'GDP Over Time', 'GDP')
 
     def unemployment_rate(self):
-        years = np.arange(2000, 2024)
-        unemployment = np.random.uniform(3, 10, len(years))
+        self.fetch_data_and_plot(2, 'Unemployment Rate Over Time', 'Unemployment Rate (%)')
 
-        # Get user's colour choice
-        selected_color = self.get_user_color_choice()
-        
-        plt.plot(years, unemployment, label="Unemployment Rate", color=selected_color)
-        plt.xlabel("Year")
-        plt.ylabel("Unemployment Rate (%)")
-        plt.title("Unemployment Rate over Time")
-        plt.legend()
-        plt.show()
+    def inflation_rate(self):
+        self.fetch_data_and_plot(3, 'Inflation Rate Over Time', 'Inflation Rate (%)')
 
+    def gdp_per_cap(self):
+        self.fetch_data_and_plot(4, 'GDP per Capita Over Time', 'GDP per Capita')
 
     def demand_supply_curves(self):
         quantities = np.linspace(1, 100, 100)
@@ -189,10 +141,10 @@ class EconomicGraph:
         equilibrium_price = demand[equilibrium_idx[0]]
 
         # Get user's colour choice for demand
-        demand_color = self.get_user_color_choice()
+        demand_color = self.get_user_colour_choice()
         
         # Get user's colour choice for supply
-        supply_color = self.get_user_color_choice()
+        supply_color = self.get_user_colour_choice()
         
         plt.plot(quantities, demand, label="Demand Curve", color=demand_color)
         plt.plot(quantities, supply, label="Supply Curve", color=supply_color)
@@ -216,10 +168,10 @@ class EconomicGraph:
         #Example of supply shock)
 
         # Get user's colour choice for AD
-        ad_color = self.get_user_color_choice()
+        ad_color = self.get_user_colour_choice()
         
         # Get user's colour choice for AS
-        as_color = self.get_user_color_choice()
+        as_color = self.get_user_colour_choice()
         
         plt.plot(price_levels, ad, label="Aggregate Demand (AD)", color=ad_color)
         plt.plot(price_levels, as_, label="Aggregate Supply (AS)", color=as_color)
@@ -242,7 +194,7 @@ class EconomicGraph:
         u = np.linspace(1, 11, 500)
 
         y = a * u**-b
-        selected_colour = self.get_user_color_choice()
+        selected_colour = self.get_user_colour_choice()
         plt.figure(figsize=(8, 6))
         plt.plot(u, y, label='Phillips Curve', color=selected_colour)
         plt.title("The Phillips Curve", fontsize=14)
@@ -275,40 +227,15 @@ class EconomicGraph:
             elasticities.append(elasticity(p))
 
         # Get user's colour choice
-        selected_color = self.get_user_color_choice()
+        selected_colour = self.get_user_coluor_choice()
         
-        plt.plot(prices, elasticities, label="Price Elasticity", color=selected_color)
+        plt.plot(prices, elasticities, label="Price Elasticity", color=selected_colour)
         plt.xlabel("Price")
         plt.ylabel("Elasticity")
         plt.title("Price Elasticity of Demand")
         plt.legend()
         plt.show()
 
-
-
-class EconomicIndicator:
-    def __init__(self, indicator_id, name, description, data_source, update_freq):
-        self.indicator_id = indicator_id
-        self.name = name
-        self.description = description
-        self.data_source = data_source
-        self.update_freq = update_freq
-
-    def retrieve_data(self):
-        pass
-
-    def clean_data(self, raw_data):
-        pass
-
-class EconomicData:
-    def __init__(self, data_id, indicator_id, date, value):
-        self.data_id = data_id
-        self.indicator_id = indicator_id
-        self.date = date
-        self.value = value
-
-    def save_data(self):#will be used to insert data to database
-        pass  
 
 class UserInput:
     def __init__(self, user_id, indicator_id, custom_value, date):
@@ -322,14 +249,6 @@ class UserInput:
         pass
 
     def draw_own_graph(self):
-        pass
-
-class RealTimeData:
-    def __init__(self, api_url):
-        self.api_url = api_url
-
-
-    def fetch_real_time_data(self):
         pass
 
 class User:
@@ -349,8 +268,58 @@ class User:
 
 
 class Database:
-    pass #fetch data from the database for use
-#save user and graph data
+    def __init__(self, db_path):
+        """
+        Initialize the Database class.
+
+        :param db_path: Path to the SQLite database file.
+        """
+        self.db_path = db_path
+        self.connection = None
+        self.cursor = None
+
+    def connect(self):
+        """Connect to the SQLite database."""
+        try:
+            self.connection = sqlite3.connect(self.db_path)
+            self.cursor = self.connection.cursor()
+        except sqlite3.Error as e:
+            print(f"Error connecting to database: {e}")
+
+    def close(self):
+        """Close the database connection."""
+        if self.connection:
+            try:
+                self.connection.close()
+            except sqlite3.Error as e:
+                print(f"Error closing the database: {e}")
+
+    def fetch_data(self, query, params=None):
+        """
+        Fetch data from the database.
+
+        :param query: SQL query to execute.
+        :param params: Optional parameters for the query.
+        :return: Query results as a list of tuples.
+        """
+        if not self.connection or not self.cursor:
+            print("Database connection is not established. Call connect() first.")
+            return []
+
+        try:
+            if params:
+                self.cursor.execute(query, params)
+            else:
+                self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except sqlite3.Error as e:
+            print(f"Error fetching data: {e}")
+            return []
+
+# Usage in the EconomicGraph class remains the same:
+# - Create a Database instance
+# - Use `db.fetch_data` to get data for plotting graphs
+
 
 class DataExplanation:
     def __init__(self, explanation_id, graph_id, explanation_text):
@@ -362,13 +331,14 @@ class DataExplanation:
         pass 
 
 if __name__ == "__main__":
-    economic_graph = EconomicGraph()
+    db = Database("economic_data.db")
+    db.connect()
+    economic_graph = EconomicGraph(db)
     
     while True:
         economic_graph.display_options()
         economic_graph.draw_graph()
-        
-        #Ask the user if they want to continue
+
         continue_choice = input("Do you want to draw another graph? (yes/no): ").strip().lower()
         if continue_choice != 'yes':
             break
